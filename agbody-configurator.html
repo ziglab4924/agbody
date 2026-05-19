@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AG Body — Product Configurator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f2f1ed;
+  --surface:#ffffff;
+  --surface2:#f7f6f2;
+  --surface3:#eceae4;
+  --border:#dddbd4;
+  --border2:#c8c6be;
+  --text:#1a1a18;
+  --text2:#6b6b64;
+  --text3:#a8a89e;
+  --green:#1a7a45;
+  --green-bg:#e8f5ee;
+  --green-text:#145c33;
+  --radius:10px;
+  --radius-sm:6px;
+}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:2rem;}
+.page{max-width:1100px;margin:0 auto;}
+
+.header{display:flex;align-items:center;gap:14px;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);}
+.logo-mark{width:40px;height:40px;background:#1a1a18;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-mark span{color:#ffffff;font-size:12px;font-weight:700;letter-spacing:.5px;}
+.header-text h1{font-size:20px;font-weight:600;}
+.header-text p{font-size:13px;color:var(--text2);margin-top:2px;}
+
+.tabs{display:flex;margin-bottom:1.25rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px;width:fit-content;}
+.tab{padding:7px 20px;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;border:none;background:transparent;color:var(--text2);border-radius:4px;transition:all .15s;}
+.tab.active{background:var(--surface3);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.5);}
+
+.viewer-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem;}
+.viewer-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.panel-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;}
+.viewer-hint{font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;display:flex;gap:14px;}
+
+.canvas-wrap{width:100%;height:500px;background:#e8e6e0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;cursor:grab;position:relative;}
+.canvas-wrap:active{cursor:grabbing;}
+canvas#prod3d{display:block;width:100%;height:100%;}
+
+.zoom-controls{position:absolute;bottom:12px;right:12px;display:flex;flex-direction:column;gap:4px;}
+.zoom-btn{width:32px;height:32px;background:rgba(255,255,255,.9);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all .1s;font-family:inherit;}
+.zoom-btn:hover{background:var(--surface3);color:var(--text);}
+.reset-btn{width:32px;height:32px;background:rgba(255,255,255,.9);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all .1s;font-family:'IBM Plex Mono',monospace;margin-top:4px;}
+.reset-btn:hover{background:var(--surface3);color:var(--text);}
+
+.spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 1.5rem;margin-top:1rem;}
+.spec-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.spec-row:last-child{border-bottom:none;}
+.spec-label{color:var(--text2);}
+.spec-val{font-weight:500;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;}
+
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
+@media(max-width:700px){.layout{grid-template-columns:1fr;}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;}
+.panel+.panel{margin-top:1.25rem;}
+.panel>.panel-title{margin-bottom:1rem;}
+
+.dims-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:1rem;}
+.dim-field label{font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;}
+.dim-field input{width:100%;padding:8px 10px;font-size:14px;font-family:'IBM Plex Mono',monospace;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);-moz-appearance:textfield;}
+.dim-field input::-webkit-outer-spin-button,.dim-field input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.dim-field input:focus{outline:none;border-color:var(--border2);}
+.unit-note{font-size:11px;color:var(--text3);margin-bottom:1rem;font-family:'IBM Plex Mono',monospace;}
+
+.tolerance-row{display:flex;align-items:center;gap:10px;margin-bottom:1rem;}
+.tolerance-row label{font-size:12px;color:var(--text2);white-space:nowrap;}
+.tolerance-row select{padding:6px 8px;font-size:13px;font-family:inherit;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);cursor:pointer;}
+.tolerance-row select:focus{outline:none;border-color:var(--border2);}
+
+.find-btn{width:100%;padding:10px 16px;background:#1a1a18;color:#ffffff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:opacity .15s,transform .1s;}
+.find-btn:hover{opacity:.88;}.find-btn:active{transform:scale(.99);}
+
+/* configurator panel */
+.config-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem;}
+.config-panel .panel-title{margin-bottom:1rem;}
+.cfg-row{display:flex;align-items:center;gap:2rem;flex-wrap:wrap;}
+.cfg-field{display:flex;flex-direction:column;gap:6px;}
+.cfg-field label{font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+.stepper{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;width:fit-content;}
+.stepper button{width:36px;height:36px;background:var(--surface2);border:none;color:var(--text);font-size:18px;cursor:pointer;transition:background .1s;font-family:inherit;line-height:1;}
+.stepper button:hover{background:var(--surface3);}
+.stepper span{min-width:48px;text-align:center;font-size:18px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--text);padding:0 4px;background:var(--surface);border-left:1px solid var(--border);border-right:1px solid var(--border);}
+.cfg-info{font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--text2);padding:8px 12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);line-height:1.8;}
+
+.match-card{border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s;}
+.match-card:last-child{margin-bottom:0;}
+.match-card:hover{border-color:var(--border2);background:var(--surface2);}
+.match-card.best{border-color:var(--green);}
+.match-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.match-name{font-size:14px;font-weight:500;color:var(--text);}
+.match-sku{font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+.match-dims{font-size:12px;color:var(--text2);font-family:'IBM Plex Mono',monospace;}
+.match-sub{font-size:11px;color:var(--text3);margin-top:3px;}
+.badge{font-size:11px;font-weight:500;padding:3px 9px;border-radius:99px;white-space:nowrap;flex-shrink:0;}
+.badge-best{background:var(--green-bg);color:var(--green-text);border:1px solid #1a4a30;}
+.badge-close{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.score-bar{margin-top:10px;height:3px;background:var(--surface3);border-radius:99px;overflow:hidden;}
+.score-fill{height:100%;border-radius:99px;background:var(--green);transition:width .5s cubic-bezier(.4,0,.2,1);}
+
+.no-results{text-align:center;padding:1.5rem;color:var(--text2);font-size:13px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:10px;}
+.empty-state{text-align:center;padding:2.5rem 1rem;color:var(--text3);font-size:13px;}
+.empty-icon{font-size:28px;display:block;margin-bottom:8px;opacity:.4;}
+
+.footer{margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);font-size:12px;color:var(--text3);display:flex;justify-content:space-between;align-items:center;}
+.footer a{color:var(--text2);text-decoration:none;}.footer a:hover{color:var(--text);}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="logo-mark"><span>AG</span></div>
+    <div class="header-text">
+      <h1>Product Configurator</h1>
+      <p>Enter dimensions to find the nearest matching product from AG Body's catalog</p>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('drawer')">Drawer Units</button>
+    <button class="tab"        onclick="switchTab('boltbin')">Bolt Bin Units</button>
+  </div>
+
+  <div class="viewer-panel">
+    <div class="viewer-header">
+      <div class="panel-title">3D Preview</div>
+      <div class="viewer-hint"><span>drag to rotate</span><span>scroll to zoom</span></div>
+    </div>
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="prod3d"></canvas>
+      <div class="zoom-controls">
+        <button class="zoom-btn"  onclick="adjustZoom(.3)"  title="Zoom in">+</button>
+        <button class="zoom-btn"  onclick="adjustZoom(-.3)" title="Zoom out">−</button>
+        <button class="reset-btn" onclick="resetView()"     title="Reset">↺</button>
+      </div>
+    </div>
+    <div class="spec-grid" id="spec-list"></div>
+  </div>
+
+  <!-- Configurator -->
+  <div class="config-panel" id="config-panel">
+    <div class="panel-title" id="config-panel-title">Drawer Configuration</div>
+
+    <!-- DRAWER MODE -->
+    <div id="config-drawer">
+      <div class="cfg-row">
+        <div class="cfg-field">
+          <label>Number of drawers</label>
+          <div class="stepper">
+            <button onclick="stepDrawers(-1)">−</button>
+            <span id="drawer-count-val">5</span>
+            <button onclick="stepDrawers(1)">+</button>
+          </div>
+        </div>
+        <div class="cfg-info" id="drawer-info"></div>
+      </div>
+    </div>
+
+    <!-- BOLT BIN MODE -->
+    <div id="config-boltbin" style="display:none;">
+      <div class="cfg-row">
+        <div class="cfg-field">
+          <label>Columns (wide)</label>
+          <div class="stepper">
+            <button onclick="stepBB('cols',-1)">−</button>
+            <span id="bb-cols-val">4</span>
+            <button onclick="stepBB('cols',1)">+</button>
+          </div>
+        </div>
+        <div class="cfg-field">
+          <label>Rows (high)</label>
+          <div class="stepper">
+            <button onclick="stepBB('rows',-1)">−</button>
+            <span id="bb-rows-val">3</span>
+            <button onclick="stepBB('rows',1)">+</button>
+          </div>
+        </div>
+        <div class="cfg-info" id="bb-info"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="panel-title">Submit Dimensions</div>
+      <p class="unit-note">All values in inches — outer dimensions (O.D.)</p>
+      <div class="dims-grid">
+        <div class="dim-field"><label>Width</label>
+          <input type="number" id="inp-w" value="28" min="1" oninput="updatePreview()"></div>
+        <div class="dim-field"><label>Depth</label>
+          <input type="number" id="inp-d" value="18" min="1" oninput="updatePreview()"></div>
+        <div class="dim-field"><label>Height</label>
+          <input type="number" id="inp-h" value="33" min="1" oninput="updatePreview();syncConfigPanel()"></div>
+      </div>
+      <div class="tolerance-row">
+        <label>Match tolerance (overall):</label>
+        <select id="tolerance">
+          <option value="5"   selected>± 5 inches total</option>
+          <option value="3">± 3 inches total</option>
+          <option value="8">± 8 inches total</option>
+          <option value="15">± 15 inches total</option>
+          <option value="999">Any size</option>
+        </select>
+      </div>
+      <button class="find-btn" onclick="findMatches()">Find Nearest Match →</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Inventory Matches</div>
+      <div id="match-results">
+        <div class="empty-state">
+          <span class="empty-icon">📦</span>
+          Enter dimensions and press<br>"Find Nearest Match"
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>AG Body Manufacturing · 565 S 600 West, Salt Lake City, UT 84101 · (801) 355-8053</span>
+    <a href="https://www.agbody.com/line-drawings/" target="_blank">View all line drawings ↗</a>
+  </div>
+</div>
+
+<script>
+/* ── INVENTORY ────────────────────────────────────────────────────────────── */
+const INVENTORY = {
+  drawer: [
+    { sku:"8343-B",  name:"Drawer Unit 8343-B",  w:28,    d:18, h:33, drawerConfig:[[5,3],[2,5],[1,7]], description:"(5) 3\" + (2) 5\" + (1) 7\" drawers" },
+    { sku:"8465-B",  name:"Drawer Unit 8465-B",  w:35,    d:18, h:16, drawerConfig:[[5,3]],             description:"(5) 3\" drawers" },
+    { sku:"9215-B",  name:"Drawer Unit 9215-B",  w:16,    d:18, h:33, drawerConfig:[[5,3],[2,5],[1,7]], description:"(5) 3\" + (2) 5\" + (1) 7\" drawers" },
+    { sku:"10684-B", name:"Drawer Unit 10684-B", w:28.75, d:20, h:15, drawerConfig:[[3,3],[1,5]],       description:"(3) 3\" + (1) 5\" drawers" },
+    { sku:"11025-B", name:"Drawer Unit 11025-B", w:35,    d:18, h:13, drawerConfig:[[4,3]],             description:"(4) 3\" drawers" },
+    { sku:"11029-B", name:"Drawer Unit 11029-B", w:28,    d:18, h:42, drawerConfig:[[8,3],[2,5],[1,7]], description:"(8) 3\" + (2) 5\" + (1) 7\" drawers" },
+    { sku:"13108-B", name:"Drawer Unit 13108-B", w:28,    d:18, h:30, drawerConfig:[[4,3],[2,5],[1,7]], description:"(4) 3\" + (2) 5\" + (1) 7\" drawers" },
+    { sku:"13282-B", name:"Drawer Unit 13282-B", w:30,    d:18, h:40, drawerConfig:[[5,3],[2,5],[2,7]], description:"(5) 3\" + (2) 5\" + (2) 7\" drawers" },
+    { sku:"14273-B", name:"Drawer Unit 14273-B", w:26,    d:16, h:33, drawerConfig:[[5,3],[2,5],[1,7]], description:"(5) 3\" + (2) 5\" + (1) 7\" drawers" },
+    { sku:"16610-B", name:"Drawer Unit 16610-B", w:31,    d:18, h:33, drawerConfig:[[5,3],[2,5],[1,7]], description:"(5) 3\" + (2) 5\" + (1) 7\" drawers" },
+    { sku:"16955-B", name:"Drawer Unit 16955-B", w:26,    d:16, h:30, drawerConfig:[[4,3],[2,5],[1,7]], description:"(4) 3\" + (2) 5\" + (1) 7\" drawers" },
+    { sku:"17128-B", name:"Drawer Unit 17128-B", w:26,    d:18, h:33, drawerConfig:[[5,3],[2,5],[1,7]], description:"(5) 3\" + (2) 5\" + (1) 7\" drawers" },
+    { sku:"17129-B", name:"Drawer Unit 17129-B", w:24,    d:18, h:33, drawerConfig:[[5,3],[2,5],[1,7]], description:"(5) 3\" + (2) 5\" + (1) 7\" drawers" },
+    { sku:"17652-B", name:"Drawer Unit 17652-B", w:28,    d:16, h:33, drawerConfig:[[5,3],[2,5],[1,7]], description:"(5) 3\" + (2) 5\" + (1) 7\" drawers" },
+    { sku:"19074-B", name:"Drawer Unit 19074-B", w:24,    d:18, h:30, drawerConfig:[[4,3],[2,5],[1,7]], description:"(4) 3\" + (2) 5\" + (1) 7\" drawers" },
+    { sku:"19641-B", name:"Drawer Unit 19641-B", w:26,    d:16, h:26, drawerConfig:[[1,3],[3,5],[1,7]], description:"(1) 3\" + (3) 5\" + (1) 7\" drawers" },
+    { sku:"19848-B", name:"Drawer Unit 19848-B", w:20,    d:18, h:33, drawerConfig:[[5,3],[2,5],[1,7]], description:"(5) 3\" + (2) 5\" + (1) 7\" drawers" },
+  ],
+  boltbin: [
+    { sku:"8098 BB",  name:"Bolt Bin 8098",  w:16, d:18, h:35, cols:2, rows:8,  description:"2 wide × 8 high" },
+    { sku:"8462 BB",  name:"Bolt Bin 8462",  w:40, d:18, h:19, cols:5, rows:4,  description:"5 wide × 4 high" },
+    { sku:"9123 BB",  name:"Bolt Bin 9123",  w:40, d:18, h:15, cols:5, rows:3,  description:"5 wide × 3 high" },
+    { sku:"16134 BB", name:"Bolt Bin 16134", w:24, d:18, h:19, cols:3, rows:4,  description:"3 wide × 4 high" },
+    { sku:"16486 BB", name:"Bolt Bin 16486", w:32, d:18, h:15, cols:4, rows:3,  description:"4 wide × 3 high" },
+    { sku:"16781 BB", name:"Bolt Bin 16781", w:32, d:18, h:19, cols:4, rows:4,  description:"4 wide × 4 high" },
+    { sku:"17148 BB", name:"Bolt Bin 17148", w:32, d:16, h:15, cols:4, rows:3,  description:"4 wide × 3 high" },
+    { sku:"19389 BB", name:"Bolt Bin 19389", w:15, d:18, h:39, cols:2, rows:9,  description:"2 wide × 9 high" },
+  ]
+};
+
+/* ── STATE ────────────────────────────────────────────────────────────────── */
+let currentTab = 'drawer';
+let animId;
+let camAngleY  = 0.6;   // ~35° horizontal
+let camAngleX  = 0.52;  // ~30° vertical tilt — classic isometric feel
+let zoomLevel  = 1.0;
+let autoRotate = true;
+let isDragging = false, dragStartX=0, dragStartY=0, dragAngleY=0, dragAngleX=0;
+let currentDrawerConfig = null;
+let currentBoltCols = null;
+let currentBoltRows = null;
+
+/* ── CANVAS ───────────────────────────────────────────────────────────────── */
+const canvas = document.getElementById('prod3d');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('canvas-wrap');
+
+function resizeCanvas(){ canvas.width=wrap.clientWidth; canvas.height=wrap.clientHeight; }
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+/* ── INTERACTION ──────────────────────────────────────────────────────────── */
+wrap.addEventListener('mousedown', e=>{
+  isDragging=true; autoRotate=false;
+  dragStartX=e.clientX; dragStartY=e.clientY;
+  dragAngleY=camAngleY; dragAngleX=camAngleX;
+  e.preventDefault();
+});
+window.addEventListener('mousemove', e=>{
+  if(!isDragging) return;
+  camAngleY = dragAngleY + (e.clientX-dragStartX)*0.01;
+  camAngleX = Math.max(-0.5, Math.min(0.5, dragAngleX+(e.clientY-dragStartY)*0.005));
+});
+window.addEventListener('mouseup', ()=>{ isDragging=false; });
+wrap.addEventListener('touchstart', e=>{
+  if(e.touches.length!==1) return;
+  isDragging=true; autoRotate=false;
+  dragStartX=e.touches[0].clientX; dragStartY=e.touches[0].clientY;
+  dragAngleY=camAngleY; dragAngleX=camAngleX;
+},{passive:true});
+wrap.addEventListener('touchmove', e=>{
+  if(!isDragging||e.touches.length!==1) return;
+  camAngleY = dragAngleY+(e.touches[0].clientX-dragStartX)*0.01;
+  camAngleX = Math.max(-0.5,Math.min(0.5,dragAngleX+(e.touches[0].clientY-dragStartY)*0.005));
+},{passive:true});
+wrap.addEventListener('touchend', ()=>{ isDragging=false; });
+wrap.addEventListener('wheel', e=>{
+  e.preventDefault();
+  zoomLevel = Math.max(0.05, Math.min(8.0, zoomLevel-e.deltaY*0.002));
+},{passive:false});
+function adjustZoom(d){ zoomLevel=Math.max(0.05,Math.min(8.0,zoomLevel+d)); }
+function resetView(){ camAngleY=0.6; camAngleX=0.52; zoomLevel=1.0; autoRotate=true; }
+
+/* ── RENDER LOOP ──────────────────────────────────────────────────────────── */
+function startAnim(){
+  cancelAnimationFrame(animId);
+  (function loop(){
+    if(autoRotate) camAngleY+=0.005;
+    draw3D(getInputs(), camAngleY, camAngleX, zoomLevel);
+    animId=requestAnimationFrame(loop);
+  })();
+}
+
+/* ── 3D RENDERER ─────────────────────────────────────────────────────────── */
+// Faces drawn in EXPLICIT back-to-front order — no sorting needed.
+// For a box rotating around Y only, the visible faces depend on camAngleY:
+//   front face (-Y) always visible from front
+//   top face (+Z) visible when tilted
+//   left (-X) or right (+X) side depends on angle
+
+function drawFace(pts2d, fill, strokeCol, lw){
+  ctx.beginPath();
+  ctx.moveTo(pts2d[0][0], pts2d[0][1]);
+  for(let i=1;i<pts2d.length;i++) ctx.lineTo(pts2d[i][0],pts2d[i][1]);
+  ctx.closePath();
+  ctx.fillStyle=fill; ctx.fill();
+  ctx.strokeStyle=strokeCol; ctx.lineWidth=lw||0.8; ctx.stroke();
+}
+
+/* ── DRAW ─────────────────────────────────────────────────────────────────── */
+function draw3D(dims, angY, angX, zoom){
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // True 1:1 proportional scale — 1 inch = same pixels on all axes
+  const diag   = Math.sqrt(dims.w*dims.w + dims.d*dims.d + dims.h*dims.h);
+  const scale  = (Math.min(W,H) * 0.68 / diag) * zoom;
+
+  const w2 = (dims.w/2)*scale;
+  const d2 = (dims.d/2)*scale;
+  const h2 = (dims.h/2)*scale;
+
+  const cosY=Math.cos(angY), sinY=Math.sin(angY);
+  const cosX=Math.cos(angX), sinX=Math.sin(angX);
+  const cx=W/2, cy=H/2;
+
+  // Project 3D point → 2D screen [x, y]
+  function p(lx,ly,lz){
+    const rx = lx*cosY - ly*sinY;
+    const ry = lx*sinY + ly*cosY;
+    const ry2= ry*cosX - lz*sinX;
+    const rz = ry*sinX + lz*cosX;
+    return [cx+rx, cy+ry2-rz];
+  }
+
+  // Light warm-gray palette — clearly readable on the light bg
+  const col = {
+    top:    '#c8c6be',   // lightest — top face
+    front:  '#b0aea6',   // mid — front face panel
+    sideR:  '#9a9890',   // darker — right side
+    sideL:  '#888880',   // darkest side — left
+    back:   '#707068',
+    cell1:  '#bab8b0',   // tray/drawer face alternating shade A
+    cell2:  '#a8a69e',   // tray/drawer face alternating shade B
+    handle: '#787870',   // pull bar
+    hStroke:'#606058',
+    divLine:'#989890',   // divider lines between cells
+    stroke: '#888880',
+    sDark:  '#606058',
+    shadow: 'rgba(0,0,0,0.12)'
+  };
+
+  // Ground shadow
+  const bot = p(0,0,-h2);
+  ctx.save();
+  ctx.translate(bot[0], bot[1]+6);
+  ctx.scale(1,0.15);
+  ctx.beginPath(); ctx.arc(0,0,w2*0.7,0,Math.PI*2);
+  ctx.fillStyle=col.shadow; ctx.fill();
+  ctx.restore();
+
+  // Which side faces are visible?
+  // Normalise angY to [0, 2π)
+  const ay = ((angY % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+  const showRight = ay < Math.PI;          // right face (+X) visible
+  const showLeft  = ay >= Math.PI;         // left face (-X) visible
+
+  // Draw order: back → invisible side → top → front panels → visible side
+  // BACK face
+  drawFace([p(-w2,d2,-h2),p(w2,d2,-h2),p(w2,d2,h2),p(-w2,d2,h2)], col.back, col.sDark);
+
+  // BOTTOM
+  drawFace([p(-w2,-d2,-h2),p(w2,-d2,-h2),p(w2,d2,-h2),p(-w2,d2,-h2)], col.back, col.sDark);
+
+  // Hidden side (draw first so visible side paints over it)
+  if(showRight){
+    drawFace([p(-w2,-d2,-h2),p(-w2,d2,-h2),p(-w2,d2,h2),p(-w2,-d2,h2)], col.sideL, col.stroke);
+  } else {
+    drawFace([p(w2,-d2,-h2),p(w2,d2,-h2),p(w2,d2,h2),p(w2,-d2,h2)], col.sideR, col.stroke);
+  }
+
+  // TOP face
+  drawFace([p(-w2,-d2,h2),p(w2,-d2,h2),p(w2,d2,h2),p(-w2,d2,h2)], col.top, col.stroke);
+
+  // FRONT panels (drawers or tray cells)
+  if(currentTab==='drawer'){
+    drawDrawerFront(dims, w2, d2, h2, p, col, scale);
+  } else {
+    drawBoltBinFront(dims, w2, d2, h2, p, col, scale);
+  }
+
+  // VISIBLE side (drawn last — over everything)
+  if(showRight){
+    drawFace([p(w2,-d2,-h2),p(w2,d2,-h2),p(w2,d2,h2),p(w2,-d2,h2)], col.sideR, col.stroke);
+  } else {
+    drawFace([p(-w2,-d2,-h2),p(-w2,d2,-h2),p(-w2,d2,h2),p(-w2,-d2,h2)], col.sideL, col.stroke);
+  }
+}
+
+/* ── DRAWER FRONT ─────────────────────────────────────────────────────────── */
+function drawDrawerFront(dims, w2, d2, h2, p, col, scale){
+  const config    = currentDrawerConfig || [[Math.max(1,Math.round(dims.h/3.5)),3]];
+  const totalInch = config.reduce((s,[c,sz])=>s+c*sz, 0);
+  const pxPerIn   = (h2*2) / totalInch;
+
+  // Border in real-scale pixels: 1 inch each side
+  const bW = (1/dims.w)*w2;
+  const bH = (1/dims.h)*h2;
+
+  // Solid front face first (the frame strip between drawers)
+  drawFace([p(-w2,-d2,-h2),p(w2,-d2,-h2),p(w2,-d2,h2),p(-w2,-d2,h2)], col.front, col.sDark);
+
+  let zBot = -h2;  // start at bottom
+  let idx  = 0;
+  for(const [count, sizeIn] of config){
+    for(let i=0;i<count;i++){
+      const pxH  = sizeIn * pxPerIn;
+      const zTop = zBot + pxH;
+
+      // Inset face: 1" border on all 4 sides
+      const x0 = -w2 + bW,  x1 = w2 - bW;
+      const z0 =  zBot + bH, z1 = zTop - bH;
+
+      drawFace([p(x0,-d2,z1),p(x1,-d2,z1),p(x1,-d2,z0),p(x0,-d2,z0)],
+        idx%2===0 ? col.cell1 : col.cell2, col.stroke, 0.6);
+
+      // Handle bar — centered, 55% of inner width, ~15% of inner height
+      const hW  = (x1-x0)*0.55;
+      const hMx = 0;
+      const hZ  = (z0+z1)/2;
+      const hH  = (z1-z0)*0.15;
+      drawFace([p(-hW/2,-d2,hZ+hH),p(hW/2,-d2,hZ+hH),p(hW/2,-d2,hZ-hH),p(-hW/2,-d2,hZ-hH)],
+        col.handle, col.hStroke, 0.5);
+
+      zBot = zTop;
+      idx++;
+    }
+  }
+}
+
+/* ── BOLT BIN FRONT ───────────────────────────────────────────────────────── */
+function drawBoltBinFront(dims, w2, d2, h2, p, col, scale){
+  const cols = currentBoltCols || Math.max(2, Math.round(dims.w/8));
+  const rows = currentBoltRows || Math.max(2, Math.round(dims.h/4.5));
+
+  const cellW = (w2*2)/cols;
+  const cellH = (h2*2)/rows;
+
+  // Border: 1 inch per side in scale pixels
+  const bW = (1/dims.w)*w2;
+  const bH = (1/dims.h)*h2;
+
+  // Solid front face base
+  drawFace([p(-w2,-d2,-h2),p(w2,-d2,-h2),p(w2,-d2,h2),p(-w2,-d2,h2)], col.front, col.sDark);
+
+  // Draw every cell: r=0 is bottom row, r=rows-1 is top
+  for(let r=0; r<rows; r++){
+    for(let c=0; c<cols; c++){
+      // Outer cell bounds
+      const ox0 = -w2 + c*cellW;
+      const ox1 =  ox0 + cellW;
+      const oz0 = -h2 + r*cellH;       // bottom of cell
+      const oz1 =  oz0 + cellH;        // top of cell
+
+      // Inset face
+      const ix0 = ox0 + bW;
+      const ix1 = ox1 - bW;
+      const iz0 = oz0 + bH;
+      const iz1 = oz1 - bH;
+
+      // Draw — top-left, top-right, bottom-right, bottom-left
+      drawFace([p(ix0,-d2,iz1),p(ix1,-d2,iz1),p(ix1,-d2,iz0),p(ix0,-d2,iz0)],
+        (r+c)%2===0 ? col.cell1 : col.cell2, col.stroke, 0.5);
+
+      // Pull lip: centered, 40% wide, bottom 20% of inner cell
+      const lW  = (ix1-ix0)*0.40;
+      const lMx = (ix0+ix1)/2;
+      const lZ0 = iz0 + (iz1-iz0)*0.08;
+      const lZ1 = iz0 + (iz1-iz0)*0.22;
+      drawFace([p(lMx-lW/2,-d2,lZ1),p(lMx+lW/2,-d2,lZ1),p(lMx+lW/2,-d2,lZ0),p(lMx-lW/2,-d2,lZ0)],
+        col.handle, col.hStroke, 0.4);
+    }
+  }
+
+  // Divider lines on top of cells
+  ctx.strokeStyle = col.divLine;
+  // Horizontal dividers (between rows)
+  for(let r=1;r<rows;r++){
+    const z = -h2 + r*cellH;
+    const L=p(-w2,-d2,z), R=p(w2,-d2,z);
+    ctx.beginPath(); ctx.moveTo(L[0],L[1]); ctx.lineTo(R[0],R[1]);
+    ctx.lineWidth=1.2; ctx.stroke();
+  }
+  // Vertical dividers (between cols)
+  for(let c=1;c<cols;c++){
+    const x = -w2 + c*cellW;
+    const T=p(x,-d2,h2), B=p(x,-d2,-h2);
+    ctx.beginPath(); ctx.moveTo(T[0],T[1]); ctx.lineTo(B[0],B[1]);
+    ctx.lineWidth=1.2; ctx.stroke();
+  }
+}
+
+
+/* ── SPECS ────────────────────────────────────────────────────────────────── */
+function updateSpecs(dims){
+  let rows=[];
+  if(currentTab==='drawer'){
+    const config=currentDrawerConfig||[[Math.max(1,Math.round(dims.h/3.5)),3]];
+    const desc=config.map(([c,s])=>`(${c}) ${s}"`).join(' + ');
+    const total=config.reduce((s,[c])=>s+c,0);
+    rows=[
+      ['Overall (O.D.)',  `${dims.w}" W × ${dims.d}" D × ${dims.h}" H`],
+      ['Interior (I.D.)', `${(dims.w-2).toFixed(2)}" W × ${dims.d}" D`],
+      ['Drawer config',   desc],
+      ['Total drawers',   `${total}`],
+      ['Material',        'A60 Galvanneal steel'],
+      ['Finish',          'Zinc chromate primer'],
+    ];
+  } else {
+    const cols=currentBoltCols||Math.max(2,Math.round(dims.w/8));
+    const brows=currentBoltRows||Math.max(2,Math.round(dims.h/4.5));
+    rows=[
+      ['Overall (O.D.)',  `${dims.w}" W × ${dims.d}" D × ${dims.h}" H`],
+      ['Grid layout',     `${cols} wide × ${brows} high`],
+      ['Total trays',     `${cols*brows}`],
+      ['Includes',        '3" slanted risers'],
+      ['Material',        'A60 Galvanneal steel'],
+      ['Finish',          'Zinc chromate primer'],
+    ];
+  }
+  document.getElementById('spec-list').innerHTML=rows.map(([l,v])=>
+    `<div class="spec-row"><span class="spec-label">${l}</span><span class="spec-val">${v}</span></div>`
+  ).join('');
+}
+
+function getInputs(){
+  return {
+    w:Math.max(1,parseFloat(document.getElementById('inp-w').value)||1),
+    d:Math.max(1,parseFloat(document.getElementById('inp-d').value)||1),
+    h:Math.max(1,parseFloat(document.getElementById('inp-h').value)||1)
+  };
+}
+function updatePreview(){ updateSpecs(getInputs()); syncConfigInfo(); }
+
+/* ── CONFIGURATOR STATE ───────────────────────────────────────────────────── */
+let drawerCount = 5;
+let bbCols = 4;
+let bbRows = 3;
+
+/* ── DRAWER STEPPER ───────────────────────────────────────────────────────── */
+function stepDrawers(delta){
+  drawerCount = Math.max(1, Math.min(20, drawerCount + delta));
+  document.getElementById('drawer-count-val').textContent = drawerCount;
+  // Equal height per drawer — divide box height evenly
+  const dims = getInputs();
+  const drawerH = +(dims.h / drawerCount).toFixed(2);
+  currentDrawerConfig = [[drawerCount, drawerH]];
+  syncConfigInfo();
+  updateSpecs(dims);
+}
+
+/* ── BOLT BIN STEPPER ─────────────────────────────────────────────────────── */
+function stepBB(axis, delta){
+  if(axis==='cols') bbCols = Math.max(1, Math.min(12, bbCols + delta));
+  if(axis==='rows') bbRows = Math.max(1, Math.min(20, bbRows + delta));
+  document.getElementById('bb-cols-val').textContent = bbCols;
+  document.getElementById('bb-rows-val').textContent = bbRows;
+  currentBoltCols = bbCols;
+  currentBoltRows = bbRows;
+  syncConfigInfo();
+  updateSpecs(getInputs());
+}
+
+/* ── INFO SUMMARY ─────────────────────────────────────────────────────────── */
+function syncConfigInfo(){
+  const dims = getInputs();
+  const isDrawer = currentTab==='drawer';
+
+  if(isDrawer){
+    const count = drawerCount;
+    const drawerH = +(dims.h / count).toFixed(2);
+    document.getElementById('drawer-info').innerHTML =
+      `${count} drawers<br>`+
+      `each <span style="color:var(--green)">${dims.w}" W × ${dims.d}" D × ${drawerH}" H</span><br>`+
+      `fills ${dims.h}" height exactly`;
+    // keep config in sync
+    currentDrawerConfig = [[count, drawerH]];
+  } else {
+    const cols = bbCols, rows = bbRows;
+    const cellW = +(dims.w / cols).toFixed(2);
+    const cellH = +(dims.h / rows).toFixed(2);
+    document.getElementById('bb-info').innerHTML =
+      `${cols} × ${rows} = ${cols*rows} trays<br>`+
+      `each <span style="color:var(--green)">${cellW}" W × ${dims.d}" D × ${cellH}" H</span><br>`+
+      `fills ${dims.w}" W × ${dims.h}" H exactly`;
+    currentBoltCols = cols;
+    currentBoltRows = rows;
+  }
+}
+
+/* ── SYNC PANEL VISIBILITY ────────────────────────────────────────────────── */
+function syncConfigPanel(){
+  const isDrawer = currentTab==='drawer';
+  document.getElementById('config-panel-title').textContent =
+    isDrawer ? 'Drawer Configuration' : 'Tray Configuration';
+  document.getElementById('config-drawer').style.display  = isDrawer ? '' : 'none';
+  document.getElementById('config-boltbin').style.display = isDrawer ? 'none' : '';
+  syncConfigInfo();
+}
+
+/* ── MATCHING — overall 3D distance (single tolerance on diagonal) ────────── */
+function findMatches(){
+  const dims    = getInputs();
+  const tol     = parseFloat(document.getElementById('tolerance').value);
+  const catalog = INVENTORY[currentTab];
+
+  // Score = 3D Euclidean distance across all three dimensions
+  // Tolerance = that total distance must be ≤ tol inches
+  const scored=catalog.map(item=>{
+    const dw=item.w-dims.w, dd=item.d-dims.d, dh=item.h-dims.h;
+    const dist=Math.sqrt(dw*dw+dd*dd+dh*dh);
+    return{...item, dist,
+      dw:Math.abs(dw), dd:Math.abs(dd), dh:Math.abs(dh),
+      withinTol: dist<=tol};
+  }).sort((a,b)=>a.dist-b.dist);
+
+  const inTol  =scored.filter(i=>i.withinTol).slice(0,3);
+  const results=inTol.length>0?inTol:scored.slice(0,3);
+
+  // Load best into preview
+  const best=results[0];
+  if(currentTab==='drawer') currentDrawerConfig=best.drawerConfig;
+  else { currentBoltCols=best.cols; currentBoltRows=best.rows; }
+  updateSpecs(dims);
+
+  const worst=results[results.length-1].dist||1;
+  let html='';
+  if(inTol.length===0){
+    html+=`<div class="no-results">No matches within ±${tol}" total. Showing closest available:</div>`;
+  }
+
+  html+=results.map((item,i)=>{
+    const pct=Math.max(8,Math.round((1-item.dist/(worst+1))*100));
+    const exact=item.dist<0.5;
+    const label=i===0?(exact?'✓ Exact':'Best match'):`${item.dist.toFixed(1)}" away`;
+    const delta=`W±${item.dw.toFixed(1)}" D±${item.dd.toFixed(1)}" H±${item.dh.toFixed(1)}"`;
+    return`<div class="match-card ${i===0?'best':''}" onclick="loadMatch('${item.sku}')">
+      <div class="match-header">
+        <div><div class="match-name">${item.name}</div>
+        <div class="match-sku">${item.sku}</div></div>
+        <span class="badge ${i===0?'badge-best':'badge-close'}">${label}</span>
+      </div>
+      <div class="match-dims">${item.w}" W × ${item.d}" D × ${item.h}" H</div>
+      <div class="match-sub">${item.description} &nbsp;·&nbsp; ${delta}</div>
+      <div class="score-bar"><div class="score-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('match-results').innerHTML=html;
+}
+
+function loadMatch(sku){
+  const item=INVENTORY[currentTab].find(i=>i.sku===sku);
+  if(!item) return;
+  document.getElementById('inp-w').value=item.w;
+  document.getElementById('inp-d').value=item.d;
+  document.getElementById('inp-h').value=item.h;
+  if(currentTab==='drawer'){
+    currentDrawerConfig = item.drawerConfig;
+    // infer total drawer count from config
+    drawerCount = item.drawerConfig.reduce((s,[c])=>s+c, 0);
+    document.getElementById('drawer-count-val').textContent = drawerCount;
+    // recompute equal split for preview
+    const drawerH = +(item.h / drawerCount).toFixed(2);
+    currentDrawerConfig = [[drawerCount, drawerH]];
+  } else {
+    currentBoltCols = item.cols; currentBoltRows = item.rows;
+    bbCols = item.cols; bbRows = item.rows;
+    document.getElementById('bb-cols-val').textContent = bbCols;
+    document.getElementById('bb-rows-val').textContent = bbRows;
+  }
+  syncConfigInfo();
+  updatePreview();
+}
+
+/* ── TAB SWITCH ───────────────────────────────────────────────────────────── */
+function switchTab(tab){
+  currentTab=tab;
+  currentDrawerConfig=null; currentBoltCols=null; currentBoltRows=null;
+  document.querySelectorAll('.tab').forEach((t,i)=>
+    t.classList.toggle('active',(i===0&&tab==='drawer')||(i===1&&tab==='boltbin'))
+  );
+  const d=tab==='drawer'?[28,18,33]:[32,18,15];
+  document.getElementById('inp-w').value=d[0];
+  document.getElementById('inp-d').value=d[1];
+  document.getElementById('inp-h').value=d[2];
+  document.getElementById('match-results').innerHTML=
+    '<div class="empty-state"><span class="empty-icon">📦</span>Enter dimensions and press<br>"Find Nearest Match"</div>';
+  syncConfigPanel();
+  updatePreview();
+}
+
+/* ── INIT ─────────────────────────────────────────────────────────────────── */
+syncConfigPanel();
+updatePreview();
+startAnim();
+</script>
+</body>
+</html>
